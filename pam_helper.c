@@ -54,17 +54,22 @@ struct pam_closure {
 
 static int pam_conversation (int nmsgs, const struct pam_message **msg, struct pam_response **resp, void *closure);
 
+#define MESSAGE_PROMPT_ECHO_OFF 1
+#define PROMPT "Password"
+
 int
 main (int argc, char **argv)
 {
 	pam_handle_t *pamh = NULL;
 	int status = -1;
-	ssize_t num_read;
+	ssize_t num_read, num_write;
 	struct pam_conv pc;
 	struct pam_closure c;
 	char *passwd = NULL;
 	char *user = NULL;
 	char *service = NULL;
+	int prompt_type = MESSAGE_PROMPT_ECHO_OFF;
+	size_t msg_len;
 
 	if (argc != 3)
 		usage();
@@ -79,11 +84,46 @@ main (int argc, char **argv)
 		errx(1, "Failed to allocate password buffer.");
 	}
 
+	num_write = write(STDOUT_FILENO, &prompt_type, sizeof (prompt_type));
+	if (num_write == sizeof (prompt_type)) {
+		msg_len = strlen (PROMPT);
+		num_write = write(STDOUT_FILENO, &msg_len, sizeof (msg_len));
+		if (num_write == sizeof (msg_len)) {
+			num_write = write(STDOUT_FILENO, PROMPT, msg_len);
+			if (num_write != msg_len) {
+				num_write = -1;
+			}
+		} else {
+			num_write = -1;
+		}
+	} else {
+		num_write = -1;
+	}
+	if (num_write < 0) {
+		free(service);
+		free(user);
+		free(passwd);
+		errx(1, "Failed to write prompt.");
+	}
+
 again:
-	num_read = read(STDIN_FILENO, passwd, PW_LEN);
+	num_read = read(STDIN_FILENO, &msg_len, sizeof (msg_len));
 	if (num_read == -1 && errno == EAGAIN)
 		goto again;
-	else if (num_read == -1) {
+	if (num_read == sizeof (msg_len)) {
+		if (msg_len < PW_LEN) {
+			num_read = read(STDIN_FILENO, passwd, msg_len);
+			if (num_read == msg_len)
+				passwd[msg_len] = '\0';
+			else
+				num_read = -1;
+		} else {
+			num_read = -1;
+		}
+	} else {
+		num_read = -1;
+	}
+	if (num_read < 0) {
 		free(service);
 		free(user);
 		free(passwd);
