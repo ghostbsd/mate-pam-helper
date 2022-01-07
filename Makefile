@@ -3,10 +3,9 @@
 .include <bsd.own.mk>
 
 PROG=	pam_helper
-BINOWN=	root
 BINMODE=4555
 DPADD=	${LIBPAM}
-LDADD=	${MINUSLPAM}
+LDADD=	-lpam
 WARNS?=	6
 
 MK_MAN=	no
