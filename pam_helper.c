@@ -69,7 +69,7 @@ main (int argc, char **argv)
 	char *user = NULL;
 	char *service = NULL;
 	int prompt_type = MESSAGE_PROMPT_ECHO_OFF;
-	size_t msg_len;
+	ssize_t msg_len;
 
 	if (argc != 3)
 		usage();
