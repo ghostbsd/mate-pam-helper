@@ -2,7 +2,7 @@
 
 .include <bsd.own.mk>
 
-PROG=	pam_helper
+PROG=	mate_pam_helper
 BINMODE=4555
 DPADD=	${LIBPAM}
 LDADD=	-lpam
